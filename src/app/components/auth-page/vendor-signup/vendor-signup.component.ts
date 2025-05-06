@@ -9,7 +9,7 @@ import { Router } from '@angular/router'; // Import Router
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './vendor-signup.component.html',
-  styleUrl: './vendor-signup.component.css'
+  styleUrls: ['./vendor-signup.component.css']
 })
 export class VendorSignupComponent implements OnInit, AfterViewInit {
   signInForm: FormGroup;
