@@ -15,7 +15,7 @@ interface Product {
   imports: [CommonModule, ReactiveFormsModule],
   standalone: true,
   templateUrl: './supplier-signup.component.html',
-  styleUrl: './supplier-signup.component.css'
+  styleUrls: ['./supplier-signup.component.css']
 })
 export class SupplierSignupComponent implements OnInit, AfterViewInit {
   signInForm: FormGroup;
