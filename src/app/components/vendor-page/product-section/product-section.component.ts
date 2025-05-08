@@ -1,20 +1,44 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+
+interface Product {
+  name: string;
+  subtitle: string;
+  price: number;
+  category: string;
+  image: string;
+}
+
+interface CartItem {
+  name: string;
+  subtitle: string;
+  price: number;
+  image: string;
+  quantity: number;
+}
 
 @Component({
   selector: 'app-product-section',
+  standalone: true,
   imports: [
-    CommonModule, // This includes NgFor and NgClass
+    CommonModule,
     RouterLink,
+    FormsModule,
   ],
   templateUrl: './product-section.component.html',
   styleUrl: './product-section.component.css',
 })
-export class ProductSectionComponent {
+export class ProductSectionComponent implements OnInit, OnDestroy {
   selectedCategory = 'All';
-
   categories = ['All', 'Powders', 'Whole Spices', 'Blends'];
+  selectedProduct: Product | null = null;
+  selectedQuantity = 1;
+  
+  // Cart state
+  cartCount = signal(0);
+  cartItems = signal<CartItem[]>([]);
 
   products = [
     {
@@ -75,22 +99,64 @@ export class ProductSectionComponent {
     },
   ];
 
+  constructor() {
+    this.loadCart();
+  }
+
   get filteredProducts() {
     return this.selectedCategory === 'All'
       ? this.products
       : this.products.filter((p) => p.category === this.selectedCategory);
   }
 
-  selectedProduct: any = null;
+  updateQuantity(value: string) {
+    this.selectedQuantity = +value;
+  }
 
-  openProductModal(product: any) {
+  openProductModal(product: Product) {
     this.selectedProduct = product;
+    this.selectedQuantity = 1; // Reset quantity when opening modal
   }
 
   closeProductModal() {
     this.selectedProduct = null;
   }
 
+  addToCart(product: Product) {
+    const currentCart = this.cartItems();
+    const existingItem = currentCart.find(item => item.name === product.name);
+    
+    if (existingItem) {
+      // Update quantity if item exists
+      existingItem.quantity += this.selectedQuantity;
+    } else {
+      // Add new item to cart
+      currentCart.push({
+        ...product,
+        quantity: this.selectedQuantity
+      });
+    }
+
+    // Update cart state
+    this.cartItems.set([...currentCart]);
+    this.cartCount.set(currentCart.reduce((sum) => sum + 1, 0));
+    this.saveCart();
+    this.closeProductModal();
+  }
+
+  private saveCart() {
+    localStorage.setItem('cart', JSON.stringify(this.cartItems()));
+  }
+
+  private loadCart() {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      this.cartItems.set(JSON.parse(savedCart));
+      this.cartCount.set(this.cartItems().reduce((sum, item) => sum + item.quantity, 0));
+    }
+  }
+
+  // Handle keyboard events
   ngOnInit(): void {
     window.addEventListener('keydown', this.handleKeydown);
   }
@@ -102,16 +168,4 @@ export class ProductSectionComponent {
   handleKeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') this.closeProductModal();
   };
-  
-  addToCart(product: any) {
-    // Get existing cart items or initialize empty array
-    const cartItems = JSON.parse(localStorage.getItem('cart') || '[]');
-    
-    // Add new product to cart
-    cartItems.push(product);
-    
-    // Save updated cart back to localStorage
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-  }
-
 }
